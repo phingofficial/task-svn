@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,37 +18,27 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
- * Copies a repository from the repository url to another
+ * Switches a repository at a given local directory to a different location
  *
+ * @author  Dom Udall <dom.udall@clock.co.uk>
  * @package phing.tasks.ext.svn
- * @since   2.3.0
+ * @since   2.4.3
  */
-class SvnCopyTask extends SvnBaseTask
+class SvnSwitchTask extends SvnBaseTask
 {
-    private $message = "";
-
     /**
-     * Sets the message
+     * Which Revision to Export
      *
-     * @param $message
+     * @todo check if version_control_svn supports constants
+     *
+     * @var string
      */
-    public function setMessage($message)
-    {
-        $this->message = $message;
-    }
-
-    /**
-     * Gets the message
-     */
-    public function getMessage()
-    {
-        return $this->message;
-    }
+    private $revision = 'HEAD';
 
     /**
      * The main entry point
@@ -56,16 +47,34 @@ class SvnCopyTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('copy');
+        $this->setup('switch');
 
-        $this->log("Copying SVN repository from '" . $this->getRepositoryUrl() . "' to '" . $this->getToDir() . "'");
+        $this->log(
+            "Switching SVN repository at '" . $this->getToDir() . "' to '" . $this->getRepositoryUrl() . "' "
+            . ($this->getRevision() === 'HEAD' ? '' : " (revision: {$this->getRevision()})")
+        );
 
-        $options = [];
+        // revision
+        $switches = [
+            'r' => $this->getRevision(),
+        ];
 
-        if (strlen($this->getMessage()) > 0) {
-            $options['message'] = $this->getMessage();
-        }
+        $this->run([$this->getToDir()], $switches);
+    }
 
-        $this->run([$this->getToDir()], $options);
+    /**
+     * @param $revision
+     */
+    public function setRevision($revision)
+    {
+        $this->revision = $revision;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRevision()
+    {
+        return $this->revision;
     }
 }

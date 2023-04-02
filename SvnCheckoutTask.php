@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,20 +18,27 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
- * @author Siad Ardroumli <siad.ardroumli@gmail.com>
+ * Checks out a repository to a local directory
+ *
+ * @author  Andrew Eddie <andrew.eddie@jamboworks.com>
  * @package phing.tasks.ext.svn
+ * @since   2.3.0
  */
-class SvnRevertTask extends SvnBaseTask
+class SvnCheckoutTask extends SvnBaseTask
 {
     /**
-     * @var bool
+     * Which Revision to Export
+     *
+     * @todo check if version_control_svn supports constants
+     *
+     * @var string
      */
-    private $recursive;
+    private $revision = 'HEAD';
 
     /**
      * The main entry point
@@ -39,22 +47,25 @@ class SvnRevertTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('revert');
+        $this->setup('checkout');
 
-        $this->log('Reverts SVN repository');
+        $this->log(
+            "Checking out SVN repository to '" . $this->getToDir() . "'" . ($this->revision === 'HEAD' ? '' : " (revision: {$this->revision})")
+        );
 
+        // revision
         $switches = [
-            'R' => $this->recursive
+            'r' => $this->revision,
         ];
 
         $this->run([$this->getToDir()], $switches);
     }
 
     /**
-     * @param bool $recursive
+     * @param $revision
      */
-    public function setRecursive($recursive)
+    public function setRevision($revision)
     {
-        $this->recursive = $recursive;
+        $this->revision = $revision;
     }
 }

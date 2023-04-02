@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,18 +18,20 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
- * Updates a repository in local directory
+ * Exports/checks out a repository to a local directory
+ * with authentication
  *
+ * @author  Michiel Rook <mrook@php.net>
  * @author  Andrew Eddie <andrew.eddie@jamboworks.com>
  * @package phing.tasks.ext.svn
- * @since   2.3.0
+ * @since   2.2.0
  */
-class SvnUpdateTask extends SvnBaseTask
+class SvnExportTask extends SvnBaseTask
 {
     /**
      * Which Revision to Export
@@ -46,16 +49,15 @@ class SvnUpdateTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('update');
+        $this->setup('export');
 
-        $this->log(
-            "Updating SVN repository at '" . $this->getToDir() . "'" . ($this->revision === 'HEAD' ? '' : " (revision: {$this->revision})")
-        );
+        $this->log("Exporting SVN repository to '" . $this->getToDir() . "'");
 
-        // revision
-        $switches = [
-            'r' => $this->revision,
-        ];
+        $switches = [];
+
+        if (!empty($this->revision)) {
+            $switches['r'] = $this->revision;
+        }
 
         $this->run([$this->getToDir()], $switches);
     }

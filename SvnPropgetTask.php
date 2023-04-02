@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,20 +18,23 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
  * List all properties on files, dirs, or revisions from the working copy
  */
-class SvnProplistTask extends SvnBaseTask
+class SvnPropgetTask extends SvnBaseTask
 {
-    private $propertyName = "svn.proplist";
-    private $recursive = false;
+    private $fromDir;
+    private $svnPropertyName;
+    private $propertyName = "svn.propget";
 
     /**
      * Sets the name of the property to use
+     *
+     * @param $propertyName
      */
     public function setPropertyName($propertyName)
     {
@@ -47,18 +51,38 @@ class SvnProplistTask extends SvnBaseTask
 
     /**
      * Sets the name of the property to use
+     *
+     * @param $fromDir
      */
-    public function setRecursive($recursive)
+    public function setFromDir($fromDir)
     {
-        $this->recursive = $recursive;
+        $this->fromDir = $fromDir;
     }
 
     /**
      * Returns the name of the property to use
      */
-    public function getRecursive()
+    public function getFromDir()
     {
-        return $this->recursive;
+        return $this->fromDir;
+    }
+
+    /**
+     * Sets the name of the property to use
+     *
+     * @param $svnPropertyName
+     */
+    public function setSvnPropertyName($svnPropertyName)
+    {
+        $this->svnPropertyName = $svnPropertyName;
+    }
+
+    /**
+     * Returns the name of the property to use
+     */
+    public function getSvnPropertyName()
+    {
+        return $this->svnPropertyName;
     }
 
     /**
@@ -68,11 +92,11 @@ class SvnProplistTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('proplist');
+        $this->setup('propget');
 
-        $this->log("List all properties on files, dirs, or revisions from '" . $this->getWorkingCopy() . "'");
+        $this->log("Get value from file '" . $this->getWorkingCopy() . "'");
 
-        $output = $this->run([$this->getWorkingCopy()], ['recursive' => $this->getRecursive()]);
+        $output = $this->run([$this->getSvnPropertyName(), $this->getFromDir()]);
 
         $this->project->setProperty($this->getPropertyName(), $output);
     }

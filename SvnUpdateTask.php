@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,53 +18,27 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
- * List all properties on files, dirs, or revisions from the working copy
+ * Updates a repository in local directory
+ *
+ * @author  Andrew Eddie <andrew.eddie@jamboworks.com>
+ * @package phing.tasks.ext.svn
+ * @since   2.3.0
  */
-class SvnPropsetTask extends SvnBaseTask
+class SvnUpdateTask extends SvnBaseTask
 {
-    private $svnPropertyName;
-    private $svnPropertyValue;
-
     /**
-     * Sets the name of the property to use
+     * Which Revision to Export
      *
-     * @param $svnPropertyName
-     */
-    public function setSvnPropertyName($svnPropertyName)
-    {
-        $this->svnPropertyName = $svnPropertyName;
-    }
-
-    /**
-     * Returns the name of the property to use
-     */
-    public function getSvnPropertyName()
-    {
-        return $this->svnPropertyName;
-    }
-
-    /**
-     * Sets the name of the property to use
+     * @todo check if version_control_svn supports constants
      *
-     * @param $svnPropertyValue
+     * @var string
      */
-    public function setSvnPropertyValue($svnPropertyValue)
-    {
-        $this->svnPropertyValue = $svnPropertyValue;
-    }
-
-    /**
-     * Returns the name of the property to use
-     */
-    public function getSvnPropertyValue()
-    {
-        return $this->svnPropertyValue;
-    }
+    private $revision = 'HEAD';
 
     /**
      * The main entry point
@@ -72,10 +47,25 @@ class SvnPropsetTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('propset');
+        $this->setup('update');
 
-        $this->log("Set svn property for '" . $this->getToDir() . "'");
+        $this->log(
+            "Updating SVN repository at '" . $this->getToDir() . "'" . ($this->revision === 'HEAD' ? '' : " (revision: {$this->revision})")
+        );
 
-        $output = $this->run([$this->getSvnPropertyName(), $this->getSvnPropertyValue(), $this->getToDir()]);
+        // revision
+        $switches = [
+            'r' => $this->revision,
+        ];
+
+        $this->run([$this->getToDir()], $switches);
+    }
+
+    /**
+     * @param $revision
+     */
+    public function setRevision($revision)
+    {
+        $this->revision = $revision;
     }
 }

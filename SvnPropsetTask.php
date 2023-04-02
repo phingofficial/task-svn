@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,54 +18,17 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
  * List all properties on files, dirs, or revisions from the working copy
  */
-class SvnPropgetTask extends SvnBaseTask
+class SvnPropsetTask extends SvnBaseTask
 {
-    private $fromDir;
     private $svnPropertyName;
-    private $propertyName = "svn.propget";
-
-    /**
-     * Sets the name of the property to use
-     *
-     * @param $propertyName
-     */
-    public function setPropertyName($propertyName)
-    {
-        $this->propertyName = $propertyName;
-    }
-
-    /**
-     * Returns the name of the property to use
-     */
-    public function getPropertyName()
-    {
-        return $this->propertyName;
-    }
-
-    /**
-     * Sets the name of the property to use
-     *
-     * @param $fromDir
-     */
-    public function setFromDir($fromDir)
-    {
-        $this->fromDir = $fromDir;
-    }
-
-    /**
-     * Returns the name of the property to use
-     */
-    public function getFromDir()
-    {
-        return $this->fromDir;
-    }
+    private $svnPropertyValue;
 
     /**
      * Sets the name of the property to use
@@ -85,18 +49,34 @@ class SvnPropgetTask extends SvnBaseTask
     }
 
     /**
+     * Sets the name of the property to use
+     *
+     * @param $svnPropertyValue
+     */
+    public function setSvnPropertyValue($svnPropertyValue)
+    {
+        $this->svnPropertyValue = $svnPropertyValue;
+    }
+
+    /**
+     * Returns the name of the property to use
+     */
+    public function getSvnPropertyValue()
+    {
+        return $this->svnPropertyValue;
+    }
+
+    /**
      * The main entry point
      *
      * @throws BuildException
      */
     public function main()
     {
-        $this->setup('propget');
+        $this->setup('propset');
 
-        $this->log("Get value from file '" . $this->getWorkingCopy() . "'");
+        $this->log("Set svn property for '" . $this->getToDir() . "'");
 
-        $output = $this->run([$this->getSvnPropertyName(), $this->getFromDir()]);
-
-        $this->project->setProperty($this->getPropertyName(), $output);
+        $output = $this->run([$this->getSvnPropertyName(), $this->getSvnPropertyValue(), $this->getToDir()]);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,13 +18,12 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
-use VersionControl_SVN;
 
 /**
- * Stores the output of a list command on a workingcopy or repositoryurl in a property.
+ * Stores the output of a log command on a workingcopy or repositoryurl in a property.
  * This stems from the SvnLastRevisionTask.
  *
  * @author  Anton Stöckl <anton@stoeckl.de>
@@ -32,11 +32,10 @@ use VersionControl_SVN;
  * @see     VersionControl_SVN
  * @since   2.1.0
  */
-class SvnListTask extends SvnBaseTask
+class SvnLogTask extends SvnBaseTask
 {
-    private $propertyName = "svn.list";
+    private $propertyName = "svn.log";
     private $limit = null;
-    private $orderDescending = false;
 
     /**
      * Sets the name of the property to use
@@ -57,7 +56,7 @@ class SvnListTask extends SvnBaseTask
     }
 
     /**
-     * Sets the max num of tags to display
+     * Sets the max num of log entries to get from svn
      *
      * @param $limit
      */
@@ -67,71 +66,38 @@ class SvnListTask extends SvnBaseTask
     }
 
     /**
-     * Sets whether to sort tags in descending order
-     *
-     * @param $orderDescending
-     */
-    public function setOrderDescending($orderDescending)
-    {
-        $this->orderDescending = $orderDescending;
-    }
-
-    /**
      * The main entry point
      *
      * @throws BuildException
      */
     public function main()
     {
-        $this->setup('list');
+        $this->setup('log');
+
+        $switches = [];
+        if ($this->limit > 0) {
+            $switches['limit'] = $this->limit;
+        }
+
+        $output = $this->run([], $switches);
+        $result = null;
 
         if ($this->oldVersion) {
-            $this->svn->setOptions(['fetchmode' => VersionControl_SVN::FETCHMODE_XML]);
-            $output = $this->run(['--xml']);
-
-            if (!($xmlObj = @simplexml_load_string($output))) {
-                throw new BuildException("Failed to parse the output of 'svn list --xml'.");
-            }
-
-            $objects = $xmlObj->list->entry;
-            $entries = [];
-
-            foreach ($objects as $object) {
-                $entries[] = [
-                    'commit' => [
-                        'revision' => (string) $object->commit['revision'],
-                        'author' => (string) $object->commit->author,
-                        'date' => (string) $object->commit->date
-                    ],
-                    'name' => (string) $object->name
-                ];
+            foreach ($output as $line) {
+                $result .= (!empty($result)) ? "\n" : '';
+                $result .= "{$line['REVISION']} | {$line['AUTHOR']}  | {$line['DATE']}  | {$line['MSG']}";
             }
         } else {
-            $output = $this->run([]);
-            $entries = $output['list'][0]['entry'];
-        }
-
-        if ($this->orderDescending) {
-            $entries = array_reverse($entries);
-        }
-
-        $result = null;
-        $count = 0;
-
-        foreach ($entries as $entry) {
-            if ($this->limit > 0 && $count >= $this->limit) {
-                break;
+            foreach ($output['logentry'] as $line) {
+                $result .= (!empty($result)) ? "\n" : '';
+                $result .= "{$line['revision']} | {$line['author']}  | {$line['date']}  | {$line['msg']}";
             }
-
-            $result .= (!empty($result)) ? "\n" : '';
-            $result .= $entry['commit']['revision'] . ' | ' . $entry['commit']['author'] . ' | ' . $entry['commit']['date'] . ' | ' . $entry['name'];
-            $count++;
         }
 
         if (!empty($result)) {
             $this->project->setProperty($this->getPropertyName(), $result);
         } else {
-            throw new BuildException("Failed to parse the output of 'svn list'.");
+            throw new BuildException("Failed to parse the output of 'svn log'.");
         }
     }
 }

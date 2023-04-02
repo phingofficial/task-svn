@@ -1,4 +1,5 @@
 <?php
+
 /**
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,29 +18,27 @@
  * <http://phing.info>.
  */
 
-namespace Phing\Tasks\Ext;
+namespace Phing\Task\Ext\Svn;
 
 use Phing\Exception\BuildException;
 
 /**
- * Stores the output of a log command on a workingcopy or repositoryurl in a property.
- * This stems from the SvnLastRevisionTask.
+ * Stores the number of the last revision of a workingcopy in a property
  *
- * @author  Anton Stöckl <anton@stoeckl.de>
- * @author  Michiel Rook <mrook@php.net> (SvnLastRevisionTask)
+ * @author  Michiel Rook <mrook@php.net>
  * @package phing.tasks.ext.svn
  * @see     VersionControl_SVN
  * @since   2.1.0
  */
-class SvnLogTask extends SvnBaseTask
+class SvnLastRevisionTask extends SvnBaseTask
 {
-    private $propertyName = "svn.log";
-    private $limit = null;
+    private $propertyName = "svn.lastrevision";
+    private $lastChanged = false;
 
     /**
      * Sets the name of the property to use
      *
-     * @param $propertyName
+     * @param string $propertyName
      */
     public function setPropertyName($propertyName)
     {
@@ -48,6 +47,8 @@ class SvnLogTask extends SvnBaseTask
 
     /**
      * Returns the name of the property to use
+     *
+     * @return string
      */
     public function getPropertyName()
     {
@@ -55,13 +56,13 @@ class SvnLogTask extends SvnBaseTask
     }
 
     /**
-     * Sets the max num of log entries to get from svn
+     * Sets whether to retrieve the last changed revision
      *
-     * @param $limit
+     * @param bool $lastChanged
      */
-    public function setLimit($limit)
+    public function setLastChanged(bool $lastChanged)
     {
-        $this->limit = (int) $limit;
+        $this->lastChanged = $lastChanged;
     }
 
     /**
@@ -71,32 +72,34 @@ class SvnLogTask extends SvnBaseTask
      */
     public function main()
     {
-        $this->setup('log');
-
-        $switches = [];
-        if ($this->limit > 0) {
-            $switches['limit'] = $this->limit;
-        }
-
-        $output = $this->run([], $switches);
-        $result = null;
+        $this->setup('info');
 
         if ($this->oldVersion) {
-            foreach ($output as $line) {
-                $result .= (!empty($result)) ? "\n" : '';
-                $result .= "{$line['REVISION']} | {$line['AUTHOR']}  | {$line['DATE']}  | {$line['MSG']}";
+            $output = $this->run(['--xml']);
+
+            if (!($xmlObj = @simplexml_load_string($output))) {
+                throw new BuildException("Failed to parse the output of 'svn info --xml'.");
+            }
+
+            if ($this->lastChanged) {
+                $found = (int) $xmlObj->entry->commit['revision'];
+            } else {
+                $found = (int) $xmlObj->entry['revision'];
             }
         } else {
-            foreach ($output['logentry'] as $line) {
-                $result .= (!empty($result)) ? "\n" : '';
-                $result .= "{$line['revision']} | {$line['author']}  | {$line['date']}  | {$line['msg']}";
+            $output = $this->run();
+
+            if (empty($output) || !isset($output['entry'][0])) {
+                throw new BuildException("Failed to parse the output of 'svn info'.");
+            }
+
+            if ($this->lastChanged) {
+                $found = $output['entry'][0]['commit']['revision'];
+            } else {
+                $found = $output['entry'][0]['revision'];
             }
         }
 
-        if (!empty($result)) {
-            $this->project->setProperty($this->getPropertyName(), $result);
-        } else {
-            throw new BuildException("Failed to parse the output of 'svn log'.");
-        }
+        $this->project->setProperty($this->getPropertyName(), $found);
     }
 }
